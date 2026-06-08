@@ -8,6 +8,7 @@ from dataclasses import dataclass
 TRANSCRIPTION_READY = "transcription-ready"
 BROAD_COVERAGE = "broad-coverage"
 ADAPTATION_READY = "adaptation-ready"
+PROMPT_ONLY = "prompt-only"
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,12 +60,13 @@ SUPPORTED_LOCALES: tuple[LocaleInfo, ...] = (
     LocaleInfo("he-IL", "Hebrew", "heb_Hebr", ADAPTATION_READY),
     LocaleInfo("th-TH", "Thai", "tha_Thai", ADAPTATION_READY),
     LocaleInfo("nn-NO", "Norwegian Nynorsk", "nno_Latn", ADAPTATION_READY),
-    LocaleInfo("ta-IN", "Tamil", "tam_Taml", ADAPTATION_READY),
+    LocaleInfo("ta-IN", "Tamil", "tam_Taml", PROMPT_ONLY),
 )
 
 LOCALE_BY_CODE = {item.nemotron_locale: item for item in SUPPORTED_LOCALES}
 ENGLISH_LOCALES = frozenset({"en-US", "en-GB"})
 ADAPTATION_READY_LOCALES = frozenset(item.nemotron_locale for item in SUPPORTED_LOCALES if item.tier == ADAPTATION_READY)
+PROMPT_ONLY_LOCALES = frozenset(item.nemotron_locale for item in SUPPORTED_LOCALES if item.tier == PROMPT_ONLY)
 
 
 def locale_info_for(locale: str) -> LocaleInfo:
@@ -94,5 +96,11 @@ def normalize_source_locale(locale: str | None) -> str:
 
 def gradio_locale_choices() -> list[tuple[str, str]]:
     return [("Auto", "auto")] + [
-        (f"{item.name} ({item.nemotron_locale})", item.nemotron_locale) for item in SUPPORTED_LOCALES
+        (_choice_label(item), item.nemotron_locale) for item in SUPPORTED_LOCALES
     ]
+
+
+def _choice_label(item: LocaleInfo) -> str:
+    if item.tier == PROMPT_ONLY:
+        return f"{item.name} ({item.nemotron_locale}, prompt-only)"
+    return f"{item.name} ({item.nemotron_locale})"

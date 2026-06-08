@@ -3,7 +3,9 @@ import unittest
 from nemotron_live_translate.locales import (
     ADAPTATION_READY_LOCALES,
     ENGLISH_LOCALES,
+    PROMPT_ONLY_LOCALES,
     SUPPORTED_LOCALES,
+    gradio_locale_choices,
     nllb_code_for_locale,
 )
 
@@ -18,12 +20,14 @@ class LocaleTests(unittest.TestCase):
 
     def test_tamil_source_locale(self):
         self.assertEqual(nllb_code_for_locale("ta-IN"), "tam_Taml")
+        self.assertEqual(PROMPT_ONLY_LOCALES, {"ta-IN"})
+        self.assertIn(("Tamil (ta-IN, prompt-only)", "ta-IN"), gradio_locale_choices())
 
     def test_english_and_adaptation_sets(self):
         self.assertEqual(ENGLISH_LOCALES, {"en-US", "en-GB"})
         self.assertEqual(
             ADAPTATION_READY_LOCALES,
-            {"el-GR", "lt-LT", "lv-LV", "mt-MT", "sl-SI", "he-IL", "th-TH", "nn-NO", "ta-IN"},
+            {"el-GR", "lt-LT", "lv-LV", "mt-MT", "sl-SI", "he-IL", "th-TH", "nn-NO"},
         )
 
 

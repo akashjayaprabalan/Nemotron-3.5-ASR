@@ -10,7 +10,7 @@ import wave
 
 from .asr import NemotronASR
 from .audio import coerce_audio_to_wav
-from .locales import ADAPTATION_READY, locale_info_for, normalize_source_locale
+from .locales import ADAPTATION_READY, PROMPT_ONLY, locale_info_for, normalize_source_locale
 from .schemas import TranslationResult
 from .text import split_language_tagged_text
 from .translation import NLLBTranslator
@@ -63,6 +63,9 @@ class TranslationPipeline:
                 raise RuntimeError("Nemotron returned no language tag. Select the source language and retry.")
 
             locale = locale_info_for(detected_locale)
+            if not source_text.strip():
+                raise RuntimeError(_empty_transcript_message(locale, selected_locale))
+
             yield self._result(
                 started,
                 source_text=source_text,
@@ -84,6 +87,10 @@ class TranslationPipeline:
             status_parts = [asr_result.status, translation.status, spoken.status]
             if locale.tier == ADAPTATION_READY:
                 status_parts.append(f"{locale.nemotron_locale} is adaptation-ready; transcription quality may be limited.")
+            if locale.tier == PROMPT_ONLY:
+                status_parts.append(
+                    f"{locale.nemotron_locale} is prompt-only in this checkpoint; use a fine-tuned Nemotron model for reliable transcription."
+                )
 
             yield self._result(
                 started,
@@ -141,3 +148,15 @@ def _audio_summary(path: Path) -> str:
             )
     except Exception:
         return f"{path.name}, {path.stat().st_size} bytes"
+
+
+def _empty_transcript_message(locale, selected_locale: str) -> str:
+    if getattr(locale, "tier", "") == PROMPT_ONLY:
+        return (
+            f"Nemotron accepted {locale.nemotron_locale}, but the released checkpoint produced an empty transcript. "
+            "Tamil is present in the model prompt dictionary but is not listed in NVIDIA's supported 40 language-locales; "
+            "use a fine-tuned Nemotron checkpoint for Tamil transcription."
+        )
+    if selected_locale == "auto":
+        return "Nemotron returned an empty transcript. Try a longer recording or select the source language explicitly."
+    return f"Nemotron returned an empty transcript for {locale.nemotron_locale}. Try a longer, clearer recording."
