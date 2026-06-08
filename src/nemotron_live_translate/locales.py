@@ -59,6 +59,7 @@ SUPPORTED_LOCALES: tuple[LocaleInfo, ...] = (
     LocaleInfo("he-IL", "Hebrew", "heb_Hebr", ADAPTATION_READY),
     LocaleInfo("th-TH", "Thai", "tha_Thai", ADAPTATION_READY),
     LocaleInfo("nn-NO", "Norwegian Nynorsk", "nno_Latn", ADAPTATION_READY),
+    LocaleInfo("ta-IN", "Tamil", "tam_Taml", ADAPTATION_READY),
 )
 
 LOCALE_BY_CODE = {item.nemotron_locale: item for item in SUPPORTED_LOCALES}
@@ -95,4 +96,3 @@ def gradio_locale_choices() -> list[tuple[str, str]]:
     return [("Auto", "auto")] + [
         (f"{item.name} ({item.nemotron_locale})", item.nemotron_locale) for item in SUPPORTED_LOCALES
     ]
-

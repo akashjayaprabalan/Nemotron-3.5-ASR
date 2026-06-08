@@ -80,7 +80,7 @@ If Gradio is not installed, the UI smoke test is skipped.
 
 ## Supported Locales
 
-The app exposes all 40 Nemotron language-locales. NVIDIA labels 32 as transcription-ready or broad-coverage, while 8 are adaptation-ready and may need fine-tuning for production-quality transcription: Greek, Hebrew, Lithuanian, Slovenian, Latvian, Maltese, Thai, and Norwegian Nynorsk.
+The app exposes 41 selectable Nemotron source locales, including Tamil (ta-IN). NVIDIA labels the original 40 language-locales as 32 transcription-ready or broad-coverage locales plus 8 adaptation-ready locales. The app also enables Tamil from Nemotron's local prompt dictionary and marks it adaptation-ready so demo users see a quality caution.
 
 All supported locales translate to English (`eng_Latn`). English source locales skip translation and are spoken back directly.
 
