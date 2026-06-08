@@ -27,6 +27,22 @@ pip install "nemo_toolkit[asr] @ git+https://github.com/NVIDIA/NeMo.git@main"
 
 The first translation run downloads the Nemotron and NLLB model weights into the Hugging Face cache. That can take a while and uses several GB of disk.
 
+Before a live demo, warm up the model cache so the first recorded clip does not sit in a long download step:
+
+```bash
+source .venv/bin/activate
+python scripts/warmup.py --download-only
+```
+
+For a stricter runtime check, load both models once before launching the UI:
+
+```bash
+source .venv/bin/activate
+python scripts/warmup.py
+```
+
+The UI also streams backend status updates during Translate: browser audio receipt, WAV conversion, Nemotron ASR, NLLB translation, and macOS speech generation.
+
 ## Run
 
 ```bash
