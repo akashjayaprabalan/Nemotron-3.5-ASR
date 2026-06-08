@@ -2,7 +2,7 @@
 
 A local Gradio app that records speech, transcribes it with NVIDIA Nemotron 3.5 ASR, translates the recognized text into English with NLLB-200, and speaks the English result back through macOS `say`.
 
-This project intentionally uses **Nemotron ASR only**. There is no Whisper or lightweight ASR fallback. On this Apple Silicon Mac, Nemotron inference is best-effort: the app tries Apple MPS first when available and retries on CPU if MPS inference fails.
+This project intentionally uses **Nemotron ASR only**. There is no Whisper or lightweight ASR fallback. On this Apple Silicon Mac, ASR defaults to CPU for demo reliability because NeMo cache-aware streaming is designed around NVIDIA/CUDA. Translation can still use the local PyTorch runtime.
 
 ## Models
 
@@ -26,6 +26,22 @@ pip install "nemo_toolkit[asr] @ git+https://github.com/NVIDIA/NeMo.git@main"
 ```
 
 The first translation run downloads the Nemotron and NLLB model weights into the Hugging Face cache. That can take a while and uses several GB of disk.
+
+Before a live demo, warm up the model cache so the first recorded clip does not sit in a long download step:
+
+```bash
+source .venv/bin/activate
+python scripts/warmup.py --download-only
+```
+
+For a stricter runtime check, load both models once before launching the UI:
+
+```bash
+source .venv/bin/activate
+python scripts/warmup.py
+```
+
+The UI also streams backend status updates during Translate: browser audio receipt, WAV conversion, Nemotron ASR, NLLB translation, and macOS speech generation.
 
 ## Run
 
@@ -64,7 +80,7 @@ If Gradio is not installed, the UI smoke test is skipped.
 
 ## Supported Locales
 
-The app exposes all 40 Nemotron language-locales. NVIDIA labels 32 as transcription-ready or broad-coverage, while 8 are adaptation-ready and may need fine-tuning for production-quality transcription: Greek, Hebrew, Lithuanian, Slovenian, Latvian, Maltese, Thai, and Norwegian Nynorsk.
+The app exposes NVIDIA's 40 documented Nemotron source language-locales, plus Tamil (`ta-IN`) as a prompt-only experimental option because the released `.nemo` checkpoint includes that prompt key. NVIDIA's model card lists 32 transcription-ready or broad-coverage locales plus 8 adaptation-ready locales; Tamil is not part of those documented 40 language-locales. If forced `ta-IN` returns an empty transcript, use a fine-tuned Nemotron checkpoint for Tamil transcription.
 
 All supported locales translate to English (`eng_Latn`). English source locales skip translation and are spoken back directly.
 
