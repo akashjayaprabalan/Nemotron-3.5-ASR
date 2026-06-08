@@ -64,7 +64,34 @@ class TranslationPipeline:
 
             locale = locale_info_for(detected_locale)
             if not source_text.strip():
-                raise RuntimeError(_empty_transcript_message(locale, selected_locale))
+                yield self._result(
+                    started,
+                    source_text=source_text,
+                    detected_locale=detected_locale,
+                    status=f"Error: {_empty_transcript_message(locale, selected_locale)}",
+                )
+                return
+
+            if locale.tier == PROMPT_ONLY:
+                yield self._result(
+                    started,
+                    source_text=source_text,
+                    detected_locale=detected_locale,
+                    status=f"Error: {_prompt_only_transcript_message(locale, source_text)}",
+                )
+                return
+
+            if _looks_unusable_transcript(source_text):
+                yield self._result(
+                    started,
+                    source_text=source_text,
+                    detected_locale=detected_locale,
+                    status=(
+                        f"Error: Nemotron returned an unusable transcript for {detected_locale}. "
+                        "The output contains too many unknown-token placeholders, so translation and TTS were skipped."
+                    ),
+                )
+                return
 
             yield self._result(
                 started,
@@ -160,3 +187,30 @@ def _empty_transcript_message(locale, selected_locale: str) -> str:
     if selected_locale == "auto":
         return "Nemotron returned an empty transcript. Try a longer recording or select the source language explicitly."
     return f"Nemotron returned an empty transcript for {locale.nemotron_locale}. Try a longer, clearer recording."
+
+
+def _prompt_only_transcript_message(locale, source_text: str) -> str:
+    message = (
+        f"{locale.nemotron_locale} is prompt-only in this Nemotron checkpoint. "
+        "The model can accept the language prompt, but NVIDIA does not list Tamil in the supported 40 language-locales, "
+        "so the ASR transcript is not reliable enough to translate. Use a fine-tuned Nemotron checkpoint for Tamil."
+    )
+    if _looks_unusable_transcript(source_text):
+        message += " The transcript also contains unknown-token placeholder symbols."
+    return message
+
+
+def _looks_unusable_transcript(text: str) -> bool:
+    clean = (text or "").strip()
+    if not clean:
+        return True
+
+    placeholder_count = sum(1 for char in clean if char in {"?", "\u2047", "\ufffd"})
+    visible_count = sum(1 for char in clean if not char.isspace())
+    if placeholder_count >= 3 and visible_count > 0 and placeholder_count / visible_count >= 0.2:
+        return True
+
+    letters = sum(1 for char in clean if char.isalpha())
+    if visible_count >= 12 and letters == 0:
+        return True
+    return False
