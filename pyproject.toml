@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=70", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nemotron-live-translate"
+version = "0.1.0"
+description = "Local Gradio speech-to-English translator using Nemotron 3.5 ASR."
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "gradio>=5.0",
+  "huggingface_hub>=0.24",
+  "numpy>=1.26",
+  "packaging",
+  "sentencepiece<1.0.0",
+  "soundfile>=0.12",
+  "torch>=2.6.0",
+  "transformers>=4.45",
+]
+
+[project.optional-dependencies]
+app = [
+  "gradio>=5.0",
+  "huggingface_hub>=0.24",
+  "numpy>=1.26",
+  "packaging",
+  "sentencepiece<1.0.0",
+  "soundfile>=0.12",
+  "torch>=2.6.0",
+  "transformers>=4.45",
+]
+dev = [
+  "pytest>=8",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
