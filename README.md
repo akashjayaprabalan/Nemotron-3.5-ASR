@@ -80,7 +80,7 @@ If Gradio is not installed, the UI smoke test is skipped.
 
 ## Supported Locales
 
-The app exposes NVIDIA's 40 documented Nemotron source language-locales, plus Tamil (`ta-IN`) as a prompt-only experimental option because the released `.nemo` checkpoint includes that prompt key. NVIDIA's model card lists 32 transcription-ready or broad-coverage locales plus 8 adaptation-ready locales; Tamil is not part of those documented 40 language-locales. If forced `ta-IN` returns an empty transcript, use a fine-tuned Nemotron checkpoint for Tamil transcription.
+The app exposes NVIDIA's 40 documented Nemotron source language-locales, plus Tamil (`ta-IN`) as a prompt-only experimental option because the released `.nemo` checkpoint includes that prompt key. NVIDIA's model card lists 32 transcription-ready or broad-coverage locales plus 8 adaptation-ready locales; Tamil is not part of those documented 40 language-locales. If forced `ta-IN` returns an empty transcript or placeholder-heavy output, the app skips translation and TTS because NLLB cannot recover a correct translation from unusable ASR text. Use a fine-tuned Nemotron checkpoint for Tamil transcription.
 
 All supported locales translate to English (`eng_Latn`). English source locales skip translation and are spoken back directly.
 
