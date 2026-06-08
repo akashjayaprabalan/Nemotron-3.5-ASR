@@ -6,6 +6,7 @@ from pathlib import Path
 import tempfile
 import threading
 import time
+import wave
 
 from .asr import NemotronASR
 from .audio import coerce_audio_to_wav
@@ -31,16 +32,30 @@ class TranslationPipeline:
         self.work_dir.mkdir(parents=True, exist_ok=True)
 
     def translate_audio(self, audio: object, source_locale: str = "auto", chunk_ms: int | str = 320) -> TranslationResult:
+        result = None
+        for result in self.iter_translate_audio(audio, source_locale=source_locale, chunk_ms=chunk_ms):
+            pass
+        assert result is not None
+        return result
+
+    def iter_translate_audio(self, audio: object, source_locale: str = "auto", chunk_ms: int | str = 320):
         started = time.perf_counter()
         selected_locale = normalize_source_locale(source_locale)
         try:
             if audio is None:
-                return self._result(started, status="No audio received.")
+                yield self._result(started, status="No audio received.")
+                return
 
             if selected_locale != "auto":
                 locale_info_for(selected_locale)
 
+            yield self._result(started, status="Audio received from browser. Converting to mono 16 kHz WAV...")
             wav_path = coerce_audio_to_wav(audio, self.work_dir)
+            yield self._result(
+                started,
+                status=f"Audio ready for backend: {_audio_summary(wav_path)}. Loading/running Nemotron ASR...",
+            )
+
             asr_result = self.asr.transcribe_file(wav_path, selected_locale, int(chunk_ms))
             source_text, tagged_locale = split_language_tagged_text(asr_result.text)
             detected_locale = tagged_locale or (selected_locale if selected_locale != "auto" else "")
@@ -48,14 +63,29 @@ class TranslationPipeline:
                 raise RuntimeError("Nemotron returned no language tag. Select the source language and retry.")
 
             locale = locale_info_for(detected_locale)
+            yield self._result(
+                started,
+                source_text=source_text,
+                detected_locale=detected_locale,
+                status=f"{asr_result.status}. Translating {detected_locale} to English...",
+            )
+
             translation = self.translator.translate(source_text, detected_locale)
+            yield self._result(
+                started,
+                source_text=source_text,
+                detected_locale=detected_locale,
+                english_text=translation.text,
+                status=f"{asr_result.status}; {translation.status}. Generating spoken English...",
+            )
+
             spoken = self.tts.speak(translation.text)
 
             status_parts = [asr_result.status, translation.status, spoken.status]
             if locale.tier == ADAPTATION_READY:
                 status_parts.append(f"{locale.nemotron_locale} is adaptation-ready; transcription quality may be limited.")
 
-            return self._result(
+            yield self._result(
                 started,
                 source_text=source_text,
                 detected_locale=detected_locale,
@@ -64,7 +94,7 @@ class TranslationPipeline:
                 status="; ".join(part for part in status_parts if part),
             )
         except Exception as exc:
-            return self._result(started, status=f"Error: {exc}")
+            yield self._result(started, status=f"Error: {exc}")
 
     def _result(
         self,
@@ -100,3 +130,14 @@ def get_default_pipeline() -> TranslationPipeline:
 def translate_audio(audio: object, source_locale: str = "auto", chunk_ms: int | str = 320) -> TranslationResult:
     return get_default_pipeline().translate_audio(audio, source_locale=source_locale, chunk_ms=chunk_ms)
 
+
+def _audio_summary(path: Path) -> str:
+    try:
+        with wave.open(str(path), "rb") as wav:
+            duration = wav.getnframes() / float(wav.getframerate())
+            return (
+                f"{path.name}, {duration:.2f}s, {wav.getframerate()} Hz, "
+                f"{wav.getnchannels()} channel, {path.stat().st_size} bytes"
+            )
+    except Exception:
+        return f"{path.name}, {path.stat().st_size} bytes"

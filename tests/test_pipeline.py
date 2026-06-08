@@ -50,6 +50,23 @@ class PipelineTests(unittest.TestCase):
             self.assertEqual(result.audio_path, str(audio_out))
             self.assertIn("fake asr", result.status)
 
+    def test_pipeline_reports_backend_stages(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            audio_out = Path(tmp) / "spoken.wav"
+            pipeline = TranslationPipeline(
+                asr=FakeASR("hola. <es-ES>"),
+                translator=FakeTranslator("hello."),
+                tts=FakeTTS(audio_out),
+                work_dir=tmp,
+            )
+            results = list(pipeline.iter_translate_audio((8000, [0.0, 0.1, 0.0]), source_locale="auto", chunk_ms=320))
+
+            self.assertGreaterEqual(len(results), 5)
+            self.assertIn("Audio received from browser", results[0].status)
+            self.assertIn("Audio ready for backend", results[1].status)
+            self.assertEqual(results[-1].source_text, "hola.")
+            self.assertEqual(results[-1].english_text, "hello.")
+
     def test_unknown_detected_locale_is_reported(self):
         with tempfile.TemporaryDirectory() as tmp:
             pipeline = TranslationPipeline(
@@ -65,4 +82,3 @@ class PipelineTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

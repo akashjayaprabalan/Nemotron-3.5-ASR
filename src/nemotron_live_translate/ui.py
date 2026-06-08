@@ -18,14 +18,14 @@ def build_demo(pipeline: TranslationPipeline | None = None):
         nonlocal active_pipeline
         if active_pipeline is None:
             active_pipeline = get_default_pipeline()
-        result = active_pipeline.translate_audio(audio, source_locale=source_locale, chunk_ms=int(chunk_ms))
-        return (
-            result.status,
-            result.detected_locale,
-            result.source_text,
-            result.english_text,
-            result.audio_path,
-        )
+        for result in active_pipeline.iter_translate_audio(audio, source_locale=source_locale, chunk_ms=int(chunk_ms)):
+            yield (
+                result.status,
+                result.detected_locale,
+                result.source_text,
+                result.english_text,
+                result.audio_path,
+            )
 
     chunk_choices = [(f"{chunk_ms} ms", str(chunk_ms)) for chunk_ms in ATT_CONTEXT_BY_CHUNK_MS]
 
@@ -54,7 +54,7 @@ def build_demo(pipeline: TranslationPipeline | None = None):
             translate = gr.Button("Translate", variant="primary")
             clear = gr.ClearButton()
 
-        status = gr.Textbox(label="Status", lines=3)
+        status = gr.Textbox(label="Status", lines=5)
         detected = gr.Textbox(label="Detected Locale", lines=1)
         with gr.Row():
             source_text = gr.Textbox(label="Transcript", lines=5)
@@ -67,6 +67,7 @@ def build_demo(pipeline: TranslationPipeline | None = None):
             outputs=[status, detected, source_text, english_text, spoken],
             api_name="translate",
             concurrency_limit=1,
+            show_progress="minimal",
         )
         clear.add([speech, status, detected, source_text, english_text, spoken])
 
