@@ -27,7 +27,7 @@ class NemotronASR:
     keeps model loading lazy so the Gradio app can start quickly.
     """
 
-    def __init__(self, model_name: str = NEMOTRON_MODEL_ID, prefer_mps: bool = True) -> None:
+    def __init__(self, model_name: str = NEMOTRON_MODEL_ID, prefer_mps: bool = False) -> None:
         self.model_name = model_name
         self.prefer_mps = prefer_mps
         self._model = None
@@ -204,4 +204,3 @@ def _extract_transcriptions(hypotheses) -> list[str]:
 def _brief_error(exc: BaseException, limit: int = 160) -> str:
     text = str(exc).replace("\n", " ").strip()
     return text[:limit] + ("..." if len(text) > limit else "")
-

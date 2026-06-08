@@ -2,7 +2,7 @@
 
 A local Gradio app that records speech, transcribes it with NVIDIA Nemotron 3.5 ASR, translates the recognized text into English with NLLB-200, and speaks the English result back through macOS `say`.
 
-This project intentionally uses **Nemotron ASR only**. There is no Whisper or lightweight ASR fallback. On this Apple Silicon Mac, Nemotron inference is best-effort: the app tries Apple MPS first when available and retries on CPU if MPS inference fails.
+This project intentionally uses **Nemotron ASR only**. There is no Whisper or lightweight ASR fallback. On this Apple Silicon Mac, ASR defaults to CPU for demo reliability because NeMo cache-aware streaming is designed around NVIDIA/CUDA. Translation can still use the local PyTorch runtime.
 
 ## Models
 
