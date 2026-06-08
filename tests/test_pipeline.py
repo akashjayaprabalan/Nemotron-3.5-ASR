@@ -98,7 +98,37 @@ class PipelineTests(unittest.TestCase):
             result = pipeline.translate_audio((8000, [0.0, 0.1, 0.0]), source_locale="ta-IN")
             self.assertIn("produced an empty transcript", result.status)
             self.assertIn("not listed in NVIDIA's supported 40 language-locales", result.status)
-            self.assertEqual(result.detected_locale, "")
+            self.assertEqual(result.detected_locale, "ta-IN")
+            self.assertEqual(result.english_text, "")
+
+    def test_prompt_only_tamil_transcript_is_not_translated(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            pipeline = TranslationPipeline(
+                asr=FakeASR("\u2047 \u2047 ra\u2047 \u2047 \u2047"),
+                translator=FailIfCalled(),
+                tts=FailIfCalled(),
+                work_dir=tmp,
+            )
+            result = pipeline.translate_audio((8000, [0.0, 0.1, 0.0]), source_locale="ta-IN")
+            self.assertIn("prompt-only", result.status)
+            self.assertIn("not reliable enough to translate", result.status)
+            self.assertIn("unknown-token placeholder", result.status)
+            self.assertEqual(result.detected_locale, "ta-IN")
+            self.assertEqual(result.english_text, "")
+            self.assertIsNone(result.audio_path)
+
+    def test_placeholder_heavy_transcript_is_not_translated(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            pipeline = TranslationPipeline(
+                asr=FakeASR("hello \u2047 \u2047 \u2047 \u2047. <es-ES>"),
+                translator=FailIfCalled(),
+                tts=FailIfCalled(),
+                work_dir=tmp,
+            )
+            result = pipeline.translate_audio((8000, [0.0, 0.1, 0.0]), source_locale="auto")
+            self.assertIn("unusable transcript", result.status)
+            self.assertIn("translation and TTS were skipped", result.status)
+            self.assertEqual(result.detected_locale, "es-ES")
             self.assertEqual(result.english_text, "")
 
 
